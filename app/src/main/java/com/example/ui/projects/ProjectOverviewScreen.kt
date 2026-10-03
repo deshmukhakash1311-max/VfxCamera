@@ -293,8 +293,15 @@ fun ProjectOverviewScreen(
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
 
-                                SetupRow("Camera", "${cam.cameraManufacturer} ${cam.cameraModel} (${cam.cameraUnitId})")
-                                SetupRow("Lens", "${cam.focalLength} ${cam.lensManufacturer} ${cam.lensModel}")
+                                val camMakeModel = listOf(cam.cameraManufacturer, cam.cameraModel).filter { it.isNotBlank() }.joinToString(" ")
+                                val camUnit = if (cam.cameraUnitId.isNotBlank()) " (${cam.cameraUnitId})" else ""
+                                val camDisplay = (camMakeModel + camUnit).trim()
+                                SetupRow("Camera", camDisplay)
+
+                                val lensMake = listOf(cam.lensManufacturer, cam.lensModel).filter { it.isNotBlank() }.joinToString(" ")
+                                val lensDisplay = listOf(cam.focalLength, if (lensMake.isNotBlank()) "($lensMake)" else "").filter { it.isNotBlank() }.joinToString(" ")
+                                SetupRow("Lens", lensDisplay)
+
                                 SetupRow("Resolution", cam.resolution)
                                 SetupRow("Frame Rate", cam.frameRate)
                                 SetupRow("ISO", cam.iso)
@@ -536,6 +543,7 @@ fun ProjectOverviewScreen(
 
 @Composable
 private fun SetupRow(label: String, value: String) {
+    val isSpecified = value.isNotBlank() && value.trim() != "—"
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -545,12 +553,12 @@ private fun SetupRow(label: String, value: String) {
     ) {
         Text(text = label, style = MaterialTheme.typography.bodySmall, color = VfxTextMuted)
         Text(
-            text = value.ifBlank { "—" },
+            text = if (isSpecified) value.trim() else "Not specified",
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Medium
+                fontWeight = if (isSpecified) FontWeight.Medium else FontWeight.Normal
             ),
-            color = VfxTextPrimary
+            color = if (isSpecified) VfxTextPrimary else VfxTextMuted
         )
     }
     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(VfxBorderSubtle))

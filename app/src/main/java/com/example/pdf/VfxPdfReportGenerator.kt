@@ -50,16 +50,26 @@ object VfxPdfReportGenerator {
     ): File = withContext(Dispatchers.IO) {
         val pdfDocument = PdfDocument()
 
-        val filteredDays = if (options.selectedDayId != null) {
-            days.filter { it.id == options.selectedDayId }
+        val cleanProjectName = project.name.trim().replace("[^a-zA-Z0-9_-]".toRegex(), "_").trim('_')
+        val isDailyReport = options.selectedDayId != null
+        val selectedDay = if (isDailyReport) days.find { it.id == options.selectedDayId } else null
+
+        val filteredDays = if (selectedDay != null) {
+            listOf(selectedDay)
         } else {
             days
         }
 
         val reportsDir = File(context.filesDir, "reports").apply { if (!exists()) mkdirs() }
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val cleanProjectName = project.name.replace("[^a-zA-Z0-9_-]".toRegex(), "_")
-        val pdfFile = File(reportsDir, "VFX_Report_${cleanProjectName}_$timeStamp.pdf")
+        val fileName = if (isDailyReport && selectedDay != null) {
+            val dayNumStr = String.format(Locale.US, "%02d", selectedDay.dayNumber)
+            if (cleanProjectName.isNotBlank()) "VFX_${cleanProjectName}_Day_${dayNumStr}_Report.pdf"
+            else "VFX_Day_${dayNumStr}_Report.pdf"
+        } else {
+            if (cleanProjectName.isNotBlank()) "VFX_${cleanProjectName}_Project_Report.pdf"
+            else "VFX_Project_Report.pdf"
+        }
+        val pdfFile = File(reportsDir, fileName)
 
         try {
             val pdfDocument = PdfDocument()
@@ -69,159 +79,239 @@ object VfxPdfReportGenerator {
                 color = Color.BLACK
                 textSize = 10f
             }
-        val boldPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLACK
-            textSize = 10f
-            isFakeBoldText = true
-        }
-        val headerTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(20, 24, 32)
-            textSize = 20f
-            isFakeBoldText = true
-        }
-        val subTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(217, 119, 6) // Warm Amber
-            textSize = 12f
-            isFakeBoldText = true
-        }
-        val sectionHeaderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(30, 41, 59)
-            textSize = 14f
-            isFakeBoldText = true
-        }
-        val mutedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(100, 116, 139)
-            textSize = 9f
-        }
-        val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(226, 232, 240)
-            strokeWidth = 1f
-            style = Paint.Style.STROKE
-        }
-        val amberLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(245, 158, 11)
-            strokeWidth = 2f
-            style = Paint.Style.STROKE
-        }
-        val boxFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(248, 250, 252)
-            style = Paint.Style.FILL
-        }
-
-        var pageNumber = 1
-        var currentPage = pdfDocument.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
-        var canvas = currentPage.canvas
-        var currentY = MARGIN
-
-        fun drawHeaderAndFooter(c: Canvas, pNum: Int) {
-            // Header line
-            c.drawText("VFX CAPTURE REPORT  ·  ${project.name.uppercase(Locale.US)}", MARGIN, 24f, mutedPaint)
-            c.drawLine(MARGIN, 28f, PAGE_WIDTH - MARGIN, 28f, linePaint)
-
-            // Footer line
-            c.drawLine(MARGIN, PAGE_HEIGHT - 28f, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - 28f, linePaint)
-            val dateStr = SimpleDateFormat("dd MMM yyyy · HH:mm", Locale.US).format(Date())
-            c.drawText("Generated: $dateStr", MARGIN, PAGE_HEIGHT - 16f, mutedPaint)
-            val pageStr = "Page $pNum"
-            val pWidth = mutedPaint.measureText(pageStr)
-            c.drawText(pageStr, PAGE_WIDTH - MARGIN - pWidth, PAGE_HEIGHT - 16f, mutedPaint)
-        }
-
-        fun advancePage() {
-            drawHeaderAndFooter(canvas, pageNumber)
-            pdfDocument.finishPage(currentPage)
-            pageNumber++
-            currentPage = pdfDocument.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
-            canvas = currentPage.canvas
-            currentY = MARGIN + 12f
-        }
-
-        fun ensureSpace(neededHeight: Float) {
-            if (currentY + neededHeight > PAGE_HEIGHT - 45f) {
-                advancePage()
+            val boldPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.BLACK
+                textSize = 10f
+                isFakeBoldText = true
             }
-        }
-
-        // --- Cover / Project Details Section ---
-        if (options.includeProjectDetails) {
-            currentY = 46f
-            canvas.drawText("VFX CAPTURE REPORT", MARGIN, currentY, subTitlePaint)
-            currentY += 24f
-            canvas.drawText(project.name.uppercase(Locale.US), MARGIN, currentY, headerTitlePaint)
-            currentY += 8f
-            canvas.drawLine(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY, amberLinePaint)
-            currentY += 16f
-
-            // Project info table box
-            val boxHeight = 110f
-            canvas.drawRoundRect(RectF(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY + boxHeight), 4f, 4f, boxFillPaint)
-            canvas.drawRoundRect(RectF(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY + boxHeight), 4f, 4f, linePaint)
-
-            val col1X = MARGIN + 12f
-            val col2X = MARGIN + (CONTENT_WIDTH / 2f) + 6f
-            var rowY = currentY + 16f
-
-            canvas.drawText("Client:", col1X, rowY, boldPaint)
-            canvas.drawText(project.client.ifBlank { "N/A" }, col1X + 70f, rowY, textPaint)
-            canvas.drawText("Date:", col2X, rowY, boldPaint)
-            canvas.drawText(project.date.ifBlank { "N/A" }, col2X + 85f, rowY, textPaint)
-
-            rowY += 15f
-            canvas.drawText("Production:", col1X, rowY, boldPaint)
-            canvas.drawText(project.productionCompany.ifBlank { "N/A" }, col1X + 70f, rowY, textPaint)
-            canvas.drawText("Location:", col2X, rowY, boldPaint)
-            canvas.drawText(project.location.ifBlank { "N/A" }, col2X + 85f, rowY, textPaint)
-
-            rowY += 15f
-            canvas.drawText("VFX Supervisor:", col1X, rowY, boldPaint)
-            canvas.drawText(project.vfxSupervisor.ifBlank { "N/A" }, col1X + 85f, rowY, textPaint)
-            canvas.drawText("Director:", col2X, rowY, boldPaint)
-            canvas.drawText(project.director.ifBlank { "N/A" }, col2X + 85f, rowY, textPaint)
-
-            rowY += 15f
-            canvas.drawText("VFX Producer:", col1X, rowY, boldPaint)
-            canvas.drawText(project.vfxProducer.ifBlank { "N/A" }, col1X + 85f, rowY, textPaint)
-            canvas.drawText("Camera Op:", col2X, rowY, boldPaint)
-            canvas.drawText(project.cameraOperator.ifBlank { "N/A" }, col2X + 85f, rowY, textPaint)
-
-            rowY += 15f
-            canvas.drawText("Project Code:", col1X, rowY, boldPaint)
-            canvas.drawText(project.projectIdCode.ifBlank { "N/A" }, col1X + 70f, rowY, textPaint)
-            canvas.drawText("Shooting Days:", col2X, rowY, boldPaint)
-            canvas.drawText("${filteredDays.size} Days", col2X + 85f, rowY, textPaint)
-
-            currentY += boxHeight + 14f
-
-            // Project Default Camera Setup
-            ensureSpace(70f)
-            canvas.drawText("DEFAULT CAMERA SETUP", MARGIN, currentY, boldPaint)
-            currentY += 8f
-            canvas.drawLine(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY, linePaint)
-            currentY += 14f
-
-            val cam = project.cameraDefaults
-            val camSpecs = listOf(
-                "Camera: ${cam.cameraManufacturer} ${cam.cameraModel}",
-                "Lens: ${cam.focalLength} (${cam.lensManufacturer} ${cam.lensModel})",
-                "ISO: ${cam.iso}",
-                "Shutter: ${cam.shutterSpeed}",
-                "Aperture: ${cam.aperture}",
-                "FPS: ${cam.frameRate}",
-                "Color Space: ${cam.colorSpace}",
-                "Gamma: ${cam.gammaProfile}",
-                "Resolution: ${cam.resolution}"
-            )
-
-            val colW = CONTENT_WIDTH / 3f
-            for (i in camSpecs.indices) {
-                val cIdx = i % 3
-                val rIdx = i / 3
-                val x = MARGIN + (cIdx * colW)
-                val y = currentY + (rIdx * 14f)
-                canvas.drawText(camSpecs[i], x, y, textPaint)
+            val headerTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(20, 24, 32)
+                textSize = 20f
+                isFakeBoldText = true
             }
-            currentY += 46f
-        }
+            val subTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(217, 119, 6) // Warm Amber
+                textSize = 12f
+                isFakeBoldText = true
+            }
+            val sectionHeaderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(30, 41, 59)
+                textSize = 14f
+                isFakeBoldText = true
+            }
+            val mutedPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(100, 116, 139)
+                textSize = 9f
+            }
+            val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(226, 232, 240)
+                strokeWidth = 1f
+                style = Paint.Style.STROKE
+            }
+            val amberLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(245, 158, 11)
+                strokeWidth = 2f
+                style = Paint.Style.STROKE
+            }
+            val boxFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(248, 250, 252)
+                style = Paint.Style.FILL
+            }
+
+            var pageNumber = 1
+            var currentPage = pdfDocument.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
+            var canvas = currentPage.canvas
+            var currentY = MARGIN
+
+            fun drawHeaderAndFooter(c: Canvas, pNum: Int) {
+                // Header line
+                val headerText = if (isDailyReport && selectedDay != null) {
+                    "VFX DAILY CAPTURE REPORT  ·  ${project.name.ifBlank { "VFX PROJECT" }.uppercase(Locale.US)}  ·  DAY ${selectedDay.dayNumber}"
+                } else {
+                    "VFX COMPLETE PROJECT REPORT  ·  ${project.name.ifBlank { "VFX PROJECT" }.uppercase(Locale.US)}"
+                }
+                c.drawText(headerText, MARGIN, 24f, mutedPaint)
+                c.drawLine(MARGIN, 28f, PAGE_WIDTH - MARGIN, 28f, linePaint)
+
+                // Footer line
+                c.drawLine(MARGIN, PAGE_HEIGHT - 28f, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - 28f, linePaint)
+                val dateStr = SimpleDateFormat("dd MMM yyyy · HH:mm", Locale.US).format(Date())
+                c.drawText("Generated: $dateStr", MARGIN, PAGE_HEIGHT - 16f, mutedPaint)
+                val pageStr = "Page $pNum"
+                val pWidth = mutedPaint.measureText(pageStr)
+                c.drawText(pageStr, PAGE_WIDTH - MARGIN - pWidth, PAGE_HEIGHT - 16f, mutedPaint)
+            }
+
+            fun advancePage() {
+                drawHeaderAndFooter(canvas, pageNumber)
+                pdfDocument.finishPage(currentPage)
+                pageNumber++
+                currentPage = pdfDocument.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
+                canvas = currentPage.canvas
+                currentY = MARGIN + 12f
+            }
+
+            fun ensureSpace(neededHeight: Float) {
+                if (currentY + neededHeight > PAGE_HEIGHT - 45f) {
+                    advancePage()
+                }
+            }
+
+            // --- Cover / Project Details Section ---
+            if (options.includeProjectDetails) {
+                currentY = 46f
+                val titleLabel = if (isDailyReport && selectedDay != null) "VFX DAILY CAPTURE REPORT" else "VFX COMPLETE PROJECT REPORT"
+                canvas.drawText(titleLabel, MARGIN, currentY, subTitlePaint)
+                currentY += 24f
+                val projNameDisplay = project.name.ifBlank { "VFX PROJECT" }.uppercase(Locale.US)
+                canvas.drawText(projNameDisplay, MARGIN, currentY, headerTitlePaint)
+                currentY += 8f
+                canvas.drawLine(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY, amberLinePaint)
+                currentY += 16f
+
+                // Project info table box
+                val boxHeight = 115f
+                canvas.drawRoundRect(RectF(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY + boxHeight), 4f, 4f, boxFillPaint)
+                canvas.drawRoundRect(RectF(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY + boxHeight), 4f, 4f, linePaint)
+
+                val col1X = MARGIN + 12f
+                val col2X = MARGIN + (CONTENT_WIDTH / 2f) + 6f
+                var rowY = currentY + 16f
+
+                if (isDailyReport && selectedDay != null) {
+                    canvas.drawText("Project:", col1X, rowY, boldPaint)
+                    canvas.drawText(project.name.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText("Shooting Day:", col2X, rowY, boldPaint)
+                    canvas.drawText("Day ${selectedDay.dayNumber}", col2X + 85f, rowY, textPaint)
+
+                    rowY += 15f
+                    canvas.drawText("Date:", col1X, rowY, boldPaint)
+                    canvas.drawText(selectedDay.date.ifBlank { project.date.ifBlank { "Not specified" } }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText("Location:", col2X, rowY, boldPaint)
+                    canvas.drawText(selectedDay.location.ifBlank { project.location.ifBlank { "Not specified" } }, col2X + 85f, rowY, textPaint)
+
+                    rowY += 15f
+                    canvas.drawText("Client:", col1X, rowY, boldPaint)
+                    canvas.drawText(project.client.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText("Production:", col2X, rowY, boldPaint)
+                    canvas.drawText(project.productionCompany.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+
+                    rowY += 15f
+                    canvas.drawText("VFX Supervisor:", col1X, rowY, boldPaint)
+                    canvas.drawText(project.vfxSupervisor.ifBlank { "Not specified" }, col1X + 85f, rowY, textPaint)
+                    canvas.drawText("Director:", col2X, rowY, boldPaint)
+                    canvas.drawText(project.director.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+
+                    rowY += 15f
+                    canvas.drawText("Project Code:", col1X, rowY, boldPaint)
+                    canvas.drawText(project.projectIdCode.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText("Day Captures:", col2X, rowY, boldPaint)
+                    val dayCaps = capturesByDay[selectedDay.id] ?: emptyList()
+                    canvas.drawText("${dayCaps.size} Captures", col2X + 85f, rowY, textPaint)
+
+                    currentY += boxHeight + 14f
+
+                    // DAY [X] CAMERA / PRODUCTION INFORMATION
+                    ensureSpace(70f)
+                    canvas.drawText("DAY ${selectedDay.dayNumber} CAMERA / PRODUCTION INFORMATION", MARGIN, currentY, boldPaint)
+                    currentY += 8f
+                    canvas.drawLine(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY, linePaint)
+                    currentY += 14f
+
+                    val dayCam = MetadataResolver.resolveEffectiveCameraSettings(project.cameraDefaults, selectedDay.cameraOverrides)
+                    val daySpecs = mutableListOf<String>()
+                    val camStr = listOf(dayCam.cameraManufacturer, dayCam.cameraModel).filter { it.isNotBlank() }.joinToString(" ")
+                    daySpecs.add("Camera: " + camStr.ifBlank { "Not specified" })
+                    val lensStr = listOf(dayCam.focalLength, if (dayCam.lensManufacturer.isNotBlank() || dayCam.lensModel.isNotBlank()) "(${listOf(dayCam.lensManufacturer, dayCam.lensModel).filter { it.isNotBlank() }.joinToString(" ")})" else "").filter { it.isNotBlank() }.joinToString(" ")
+                    daySpecs.add("Lens: " + lensStr.ifBlank { "Not specified" })
+                    daySpecs.add("ISO: " + dayCam.iso.ifBlank { "Not specified" })
+                    daySpecs.add("Shutter: " + dayCam.shutterSpeed.ifBlank { "Not specified" })
+                    daySpecs.add("Aperture: " + dayCam.aperture.ifBlank { "Not specified" })
+                    daySpecs.add("FPS: " + dayCam.frameRate.ifBlank { "Not specified" })
+                    daySpecs.add("Color Space: " + dayCam.colorSpace.ifBlank { "Not specified" })
+                    daySpecs.add("Gamma: " + dayCam.gammaProfile.ifBlank { "Not specified" })
+                    daySpecs.add("Resolution: " + dayCam.resolution.ifBlank { "Not specified" })
+
+                    val colW = CONTENT_WIDTH / 3f
+                    for (i in daySpecs.indices) {
+                        val cIdx = i % 3
+                        val rIdx = i / 3
+                        val x = MARGIN + (cIdx * colW)
+                        val y = currentY + (rIdx * 14f)
+                        canvas.drawText(daySpecs[i], x, y, textPaint)
+                    }
+                    currentY += 46f
+                } else {
+                    // Complete Project Details
+                    canvas.drawText("Client:", col1X, rowY, boldPaint)
+                    canvas.drawText(project.client.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText("Date:", col2X, rowY, boldPaint)
+                    canvas.drawText(project.date.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+
+                    rowY += 15f
+                    canvas.drawText("Production:", col1X, rowY, boldPaint)
+                    canvas.drawText(project.productionCompany.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText("Location:", col2X, rowY, boldPaint)
+                    canvas.drawText(project.location.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+
+                    rowY += 15f
+                    canvas.drawText("VFX Supervisor:", col1X, rowY, boldPaint)
+                    canvas.drawText(project.vfxSupervisor.ifBlank { "Not specified" }, col1X + 85f, rowY, textPaint)
+                    canvas.drawText("Director:", col2X, rowY, boldPaint)
+                    canvas.drawText(project.director.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+
+                    rowY += 15f
+                    canvas.drawText("VFX Producer:", col1X, rowY, boldPaint)
+                    canvas.drawText(project.vfxProducer.ifBlank { "Not specified" }, col1X + 85f, rowY, textPaint)
+                    canvas.drawText("Camera Op:", col2X, rowY, boldPaint)
+                    canvas.drawText(project.cameraOperator.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+
+                    rowY += 15f
+                    canvas.drawText("Project Code:", col1X, rowY, boldPaint)
+                    canvas.drawText(project.projectIdCode.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText("Shooting Days:", col2X, rowY, boldPaint)
+                    canvas.drawText("${filteredDays.size} Days", col2X + 85f, rowY, textPaint)
+
+                    currentY += boxHeight + 14f
+
+                    // Project Default Camera Setup
+                    ensureSpace(70f)
+                    canvas.drawText("DEFAULT CAMERA SETUP", MARGIN, currentY, boldPaint)
+                    currentY += 8f
+                    canvas.drawLine(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY, linePaint)
+                    currentY += 14f
+
+                    val cam = project.cameraDefaults
+                    val camSpecs = mutableListOf<String>()
+                    val camStr = listOf(cam.cameraManufacturer, cam.cameraModel).filter { it.isNotBlank() }.joinToString(" ")
+                    camSpecs.add("Camera: " + camStr.ifBlank { "Not specified" })
+                    val lensStr = listOf(cam.focalLength, if (cam.lensManufacturer.isNotBlank() || cam.lensModel.isNotBlank()) "(${listOf(cam.lensManufacturer, cam.lensModel).filter { it.isNotBlank() }.joinToString(" ")})" else "").filter { it.isNotBlank() }.joinToString(" ")
+                    camSpecs.add("Lens: " + lensStr.ifBlank { "Not specified" })
+                    camSpecs.add("ISO: " + cam.iso.ifBlank { "Not specified" })
+                    camSpecs.add("Shutter: " + cam.shutterSpeed.ifBlank { "Not specified" })
+                    camSpecs.add("Aperture: " + cam.aperture.ifBlank { "Not specified" })
+                    camSpecs.add("FPS: " + cam.frameRate.ifBlank { "Not specified" })
+                    camSpecs.add("Color Space: " + cam.colorSpace.ifBlank { "Not specified" })
+                    camSpecs.add("Gamma: " + cam.gammaProfile.ifBlank { "Not specified" })
+                    camSpecs.add("Resolution: " + cam.resolution.ifBlank { "Not specified" })
+
+                    val colW = CONTENT_WIDTH / 3f
+                    for (i in camSpecs.indices) {
+                        val cIdx = i % 3
+                        val rIdx = i / 3
+                        val x = MARGIN + (cIdx * colW)
+                        val y = currentY + (rIdx * 14f)
+                        canvas.drawText(camSpecs[i], x, y, textPaint)
+                    }
+                    currentY += 46f
+                }
+            }
+
+            if (filteredDays.isEmpty()) {
+                ensureSpace(40f)
+                canvas.drawText("No shooting days available.", MARGIN, currentY, mutedPaint)
+                currentY += 20f
+            }
 
         // --- Iterate Shooting Days & Captures ---
         for (day in filteredDays) {
@@ -325,21 +415,55 @@ object VfxPdfReportGenerator {
                     if (options.includeCameraMetadata) {
                         canvas.drawText("CAMERA", metaLeft, metaY, boldPaint)
                         metaY += 12f
-                        canvas.drawText("Camera: ${effectiveCam.cameraManufacturer} ${effectiveCam.cameraModel} (${effectiveCam.cameraUnitId})", metaLeft, metaY, textPaint)
+                        val camMakeModel = listOf(effectiveCam.cameraManufacturer, effectiveCam.cameraModel).filter { it.isNotBlank() }.joinToString(" ")
+                        val camUnit = if (effectiveCam.cameraUnitId.isNotBlank()) " (${effectiveCam.cameraUnitId})" else ""
+                        val camDisplay = if (camMakeModel.isNotBlank()) "Camera: $camMakeModel$camUnit" else "Camera: Not specified"
+                        canvas.drawText(camDisplay, metaLeft, metaY, textPaint)
                         metaY += 12f
-                        canvas.drawText("Lens: ${effectiveCam.focalLength} (${effectiveCam.lensManufacturer})  |  Aperture: ${effectiveCam.aperture}", metaLeft, metaY, textPaint)
+
+                        val lensSpecs = mutableListOf<String>()
+                        if (effectiveCam.focalLength.isNotBlank()) lensSpecs.add(effectiveCam.focalLength)
+                        if (effectiveCam.lensManufacturer.isNotBlank() || effectiveCam.lensModel.isNotBlank()) {
+                            val lMake = listOf(effectiveCam.lensManufacturer, effectiveCam.lensModel).filter { it.isNotBlank() }.joinToString(" ")
+                            lensSpecs.add("($lMake)")
+                        }
+                        val lensDisplay = if (lensSpecs.isNotEmpty()) "Lens: ${lensSpecs.joinToString(" ")}" else "Lens: Not specified"
+                        val aptDisplay = if (effectiveCam.aperture.isNotBlank()) "  |  Aperture: ${effectiveCam.aperture}" else ""
+                        canvas.drawText(lensDisplay + aptDisplay, metaLeft, metaY, textPaint)
                         metaY += 12f
-                        canvas.drawText("ISO: ${effectiveCam.iso}  |  Shutter: ${effectiveCam.shutterSpeed}  |  FPS: ${effectiveCam.frameRate}", metaLeft, metaY, textPaint)
-                        metaY += 12f
-                        canvas.drawText("WB: ${effectiveCam.whiteBalance}  |  Color: ${effectiveCam.colorSpace} (${effectiveCam.gammaProfile})", metaLeft, metaY, textPaint)
-                        metaY += 16f
+
+                        val expParts = mutableListOf<String>()
+                        if (effectiveCam.iso.isNotBlank()) expParts.add("ISO: ${effectiveCam.iso}")
+                        if (effectiveCam.shutterSpeed.isNotBlank()) expParts.add("Shutter: ${effectiveCam.shutterSpeed}")
+                        if (effectiveCam.frameRate.isNotBlank()) expParts.add("FPS: ${effectiveCam.frameRate}")
+                        if (expParts.isNotEmpty()) {
+                            canvas.drawText(expParts.joinToString("  |  "), metaLeft, metaY, textPaint)
+                            metaY += 12f
+                        }
+
+                        val colParts = mutableListOf<String>()
+                        if (effectiveCam.whiteBalance.isNotBlank()) colParts.add("WB: ${effectiveCam.whiteBalance}")
+                        if (effectiveCam.colorSpace.isNotBlank()) colParts.add("Color: ${effectiveCam.colorSpace}")
+                        if (effectiveCam.gammaProfile.isNotBlank()) colParts.add("(${effectiveCam.gammaProfile})")
+                        if (colParts.isNotEmpty()) {
+                            canvas.drawText(colParts.joinToString("  |  "), metaLeft, metaY, textPaint)
+                            metaY += 14f
+                        } else {
+                            metaY += 2f
+                        }
                     }
 
                     if (options.includeVfxMetadata) {
                         canvas.drawText("VFX & TRACKING", metaLeft, metaY, boldPaint)
                         metaY += 12f
-                        canvas.drawText("Plate: ${effectiveVfx.plateType}  |  Height: ${effectiveVfx.cameraHeight}  |  Dist: ${effectiveVfx.defaultCameraDistance}", metaLeft, metaY, textPaint)
-                        metaY += 12f
+                        val vfxParts = mutableListOf<String>()
+                        if (effectiveVfx.plateType.isNotBlank()) vfxParts.add("Plate: ${effectiveVfx.plateType}")
+                        if (effectiveVfx.cameraHeight.isNotBlank()) vfxParts.add("Height: ${effectiveVfx.cameraHeight}")
+                        if (effectiveVfx.defaultCameraDistance.isNotBlank()) vfxParts.add("Dist: ${effectiveVfx.defaultCameraDistance}")
+                        if (vfxParts.isNotEmpty()) {
+                            canvas.drawText(vfxParts.joinToString("  |  "), metaLeft, metaY, textPaint)
+                            metaY += 12f
+                        }
                         if (effectiveVfx.lightingNotes.isNotBlank()) {
                             canvas.drawText("Lighting: ${effectiveVfx.lightingNotes}", metaLeft, metaY, textPaint)
                             metaY += 12f
@@ -357,6 +481,12 @@ object VfxPdfReportGenerator {
                 }
 
                 currentY = shotBoxTop + shotBoxHeight + 10f
+            }
+
+            if (dayCaptures.isEmpty()) {
+                ensureSpace(30f)
+                canvas.drawText("No captures recorded for this day.", MARGIN + 4f, currentY, mutedPaint)
+                currentY += 24f
             }
         }
 
@@ -385,21 +515,60 @@ private fun writeFallbackPdf(
     capturesByDay: Map<String, List<CaptureEntity>>,
     options: PdfExportOptions
 ) {
+    val isDailyReport = options.selectedDayId != null
+    val selectedDay = if (isDailyReport) days.find { it.id == options.selectedDayId } else null
+
     val content = buildString {
-        appendLine("VFX CAPTURE REPORT")
-        appendLine("Project: ${project.name}")
-        appendLine("Client: ${project.client}")
-        appendLine("Production: ${project.productionCompany}")
-        appendLine("Camera: ${project.cameraDefaults.cameraManufacturer} ${project.cameraDefaults.cameraModel}")
-        appendLine("Lens: ${project.cameraDefaults.focalLength} ${project.cameraDefaults.lensManufacturer}")
-        appendLine("Color Space: ${project.cameraDefaults.colorSpace}")
-        for (day in days) {
-            appendLine("DAY ${day.dayNumber} - ${day.date} - ${day.location}")
-            val caps = capturesByDay[day.id] ?: emptyList()
-            for (c in caps) {
-                val effIso = c.cameraOverrides.iso ?: c.baselineCamera.iso
-                val effLens = c.cameraOverrides.focalLength ?: c.baselineCamera.focalLength
-                appendLine("  ${c.shotNumber}: ${c.scene} ${c.take} - Lens: $effLens, ISO: $effIso")
+        if (isDailyReport && selectedDay != null) {
+            appendLine("VFX DAILY CAPTURE REPORT")
+            appendLine("Project: ${project.name.ifBlank { "Not specified" }}")
+            appendLine("Shooting Day: Day ${selectedDay.dayNumber}")
+            appendLine("Date: ${selectedDay.date.ifBlank { "Not specified" }}")
+            appendLine("Location: ${selectedDay.location.ifBlank { "Not specified" }}")
+            if (project.client.isNotBlank()) appendLine("Client: ${project.client}")
+            if (project.vfxSupervisor.isNotBlank()) appendLine("VFX Supervisor: ${project.vfxSupervisor}")
+            appendLine("DAY ${selectedDay.dayNumber} CAMERA / PRODUCTION INFORMATION")
+            val dayCam = MetadataResolver.resolveEffectiveCameraSettings(project.cameraDefaults, selectedDay.cameraOverrides)
+            val camStr = listOf(dayCam.cameraManufacturer, dayCam.cameraModel).filter { it.isNotBlank() }.joinToString(" ")
+            if (camStr.isNotBlank()) appendLine("Camera: $camStr") else appendLine("Camera: Not specified")
+            if (dayCam.focalLength.isNotBlank()) appendLine("Lens: ${dayCam.focalLength}")
+            if (dayCam.iso.isNotBlank()) appendLine("ISO: ${dayCam.iso}")
+            appendLine("CAPTURES")
+            val dayCaps = capturesByDay[selectedDay.id] ?: emptyList()
+            if (dayCaps.isEmpty()) {
+                appendLine("No captures recorded for this day.")
+            } else {
+                for (c in dayCaps) {
+                    val effIso = c.cameraOverrides.iso ?: c.baselineCamera.iso
+                    val effLens = c.cameraOverrides.focalLength ?: c.baselineCamera.focalLength
+                    appendLine("  ${c.shotNumber}: ${c.scene} ${c.take} - Lens: ${effLens.ifBlank { "Not specified" }}, ISO: ${effIso.ifBlank { "Not specified" }}")
+                }
+            }
+        } else {
+            appendLine("VFX COMPLETE PROJECT REPORT")
+            appendLine("Project: ${project.name.ifBlank { "Not specified" }}")
+            if (project.client.isNotBlank()) appendLine("Client: ${project.client}")
+            if (project.productionCompany.isNotBlank()) appendLine("Production: ${project.productionCompany}")
+            val cam = project.cameraDefaults
+            val camStr = listOf(cam.cameraManufacturer, cam.cameraModel).filter { it.isNotBlank() }.joinToString(" ")
+            if (camStr.isNotBlank()) appendLine("Camera: $camStr") else appendLine("Camera: Not specified")
+            if (cam.focalLength.isNotBlank()) appendLine("Lens: ${cam.focalLength}")
+            if (days.isEmpty()) {
+                appendLine("No shooting days available.")
+            } else {
+                for (day in days) {
+                    appendLine("DAY ${day.dayNumber} - ${day.date} - ${day.location.ifBlank { "On Location" }}")
+                    val caps = capturesByDay[day.id] ?: emptyList()
+                    if (caps.isEmpty()) {
+                        appendLine("  No captures recorded for this day.")
+                    } else {
+                        for (c in caps) {
+                            val effIso = c.cameraOverrides.iso ?: c.baselineCamera.iso
+                            val effLens = c.cameraOverrides.focalLength ?: c.baselineCamera.focalLength
+                            appendLine("  ${c.shotNumber}: ${c.scene} ${c.take} - Lens: ${effLens.ifBlank { "Not specified" }}, ISO: ${effIso.ifBlank { "Not specified" }}")
+                        }
+                    }
+                }
             }
         }
     }

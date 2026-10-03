@@ -33,7 +33,7 @@ data class CaptureEntity(
     val take: String = "Take 01",
     val subject: String = "",
     val description: String = "",
-    val imagePath: String,
+    val imagePath: String = "",
     val thumbnailPath: String? = null,
     val isReference: Boolean = false,
     val isDeleted: Boolean = false,

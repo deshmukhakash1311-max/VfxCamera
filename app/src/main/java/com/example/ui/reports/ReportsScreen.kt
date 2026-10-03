@@ -257,6 +257,8 @@ fun ReportsScreen(
 fun ExportPdfDialog(
     project: ProjectEntity,
     repository: VfxRepository,
+    initialDayId: String? = null,
+    lockToDailyReport: Boolean = false,
     onDismiss: () -> Unit,
     onReportGenerated: (File) -> Unit
 ) {
@@ -273,17 +275,26 @@ fun ExportPdfDialog(
     var incNotes by remember { mutableStateOf(true) }
     var incLocation by remember { mutableStateOf(true) }
 
-    var selectedDayId by remember { mutableStateOf<String?>(null) } // null = All Days
+    var selectedDayId by remember { mutableStateOf<String?>(initialDayId) }
 
     var isGenerating by remember { mutableStateOf(false) }
     var generatedFile by remember { mutableStateOf<File?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    val currentSelectedDay = days.find { it.id == selectedDayId }
+    val isDailyReport = selectedDayId != null
+
     AlertDialog(
         onDismissRequest = { if (!isGenerating) onDismiss() },
         title = {
             Text(
-                text = if (generatedFile == null) "EXPORT PDF REPORT" else "REPORT EXPORTED",
+                text = if (generatedFile != null) {
+                    "REPORT EXPORTED"
+                } else if (isDailyReport) {
+                    "EXPORT DAILY REPORT"
+                } else {
+                    "EXPORT PROJECT REPORT"
+                },
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
@@ -302,16 +313,24 @@ fun ExportPdfDialog(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = VfxAmber)
                         Spacer(modifier = Modifier.height(14.dp))
-                        Text("Compiling PDF pages & metadata...", style = MaterialTheme.typography.bodyMedium, color = VfxTextPrimary)
+                        Text(
+                            text = if (isDailyReport) "Compiling Daily Report for Day ${currentSelectedDay?.dayNumber ?: 1}..." else "Compiling Complete Project Report...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = VfxTextPrimary
+                        )
                     }
                 }
             } else if (generatedFile != null) {
-                // Success View (Requirement 27)
+                // Success View
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null, tint = VfxGreen, modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(project.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = VfxTextPrimary)
+                        Text(
+                            text = if (isDailyReport) "${project.name} · Day ${currentSelectedDay?.dayNumber ?: 1}" else project.name,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = VfxTextPrimary
+                        )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -327,12 +346,98 @@ fun ExportPdfDialog(
                     )
                 }
             } else {
-                // Configuration View (Requirement 25)
+                // Configuration View
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    // REPORT SCOPE
                     item {
+                        Text("REPORT SCOPE", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = VfxAmber)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        if (lockToDailyReport && currentSelectedDay != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(VfxSurface)
+                                    .border(1.dp, VfxAmber, RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 10.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "DAILY REPORT  ·  DAY ${currentSelectedDay.dayNumber} (${currentSelectedDay.date})",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
+                                    color = VfxAmber
+                                )
+                            }
+                        } else {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(if (selectedDayId == null) VfxAmber else VfxSurface)
+                                        .border(1.dp, if (selectedDayId == null) VfxAmber else VfxBorder, RoundedCornerShape(4.dp))
+                                        .clickable { selectedDayId = null }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "COMPLETE PROJECT",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = if (selectedDayId == null) VfxBlack else VfxTextPrimary
+                                    )
+                                }
+
+                                if (days.isNotEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(if (selectedDayId != null) VfxAmber else VfxSurface)
+                                            .border(1.dp, if (selectedDayId != null) VfxAmber else VfxBorder, RoundedCornerShape(4.dp))
+                                            .clickable { if (selectedDayId == null) selectedDayId = days.first().id }
+                                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = "DAILY REPORT",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = if (selectedDayId != null) VfxBlack else VfxTextPrimary
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (selectedDayId != null && days.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    days.forEach { d ->
+                                        val isSel = d.id == selectedDayId
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(3.dp))
+                                                .background(if (isSel) Color(0xFF382E1E) else VfxPanel)
+                                                .border(1.dp, if (isSel) VfxAmber else VfxBorder, RoundedCornerShape(3.dp))
+                                                .clickable { selectedDayId = d.id }
+                                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = "DAY ${d.dayNumber}",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                                    fontFamily = FontFamily.Monospace
+                                                ),
+                                                color = if (isSel) VfxAmber else VfxTextSecondary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text("REPORT LAYOUT", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = VfxAmber)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -356,7 +461,7 @@ fun ExportPdfDialog(
                     }
 
                     item {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text("INCLUDE SECTIONS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = VfxAmber)
                     }
 
@@ -440,7 +545,15 @@ fun ExportPdfDialog(
                                 )
 
                                 // Save report record to DB
-                                val totalShots = capturesByDay.values.sumOf { it.size }
+                                val targetDays = if (selectedDayId != null) shootingDaysList.filter { it.id == selectedDayId } else shootingDaysList
+                                val totalShots = targetDays.sumOf { capturesByDay[it.id]?.size ?: 0 }
+                                val reportTypeName = if (selectedDayId != null) {
+                                    val dNum = targetDays.firstOrNull()?.dayNumber ?: 1
+                                    "Daily Report (Day $dNum) - $layoutType"
+                                } else {
+                                    "Complete Project Report - $layoutType"
+                                }
+
                                 val reportEntity = ExportedReportEntity(
                                     projectId = project.id,
                                     projectName = project.name,
@@ -449,7 +562,7 @@ fun ExportPdfDialog(
                                     fileSize = file.length(),
                                     pageCount = 1,
                                     shotCount = totalShots,
-                                    layoutType = layoutType
+                                    layoutType = reportTypeName
                                 )
                                 repository.saveReport(reportEntity)
 
@@ -466,14 +579,15 @@ fun ExportPdfDialog(
                     shape = RoundedCornerShape(4.dp),
                     modifier = Modifier.testTag("confirm_export_pdf_button")
                 ) {
-                    Text("GENERATE PDF", fontWeight = FontWeight.Bold)
+                    val btnText = if (selectedDayId != null) "EXPORT DAILY REPORT" else "EXPORT PROJECT REPORT"
+                    Text(btnText, fontWeight = FontWeight.Bold)
                 }
             }
         },
         dismissButton = {
             if (!isGenerating) {
                 TextButton(onClick = onDismiss) {
-                    Text(if (generatedFile != null) "DONE" else "CANCEL", color = VfxTextPrimary)
+                    Text(if (generatedFile != null) "CLOSE" else "CANCEL", color = VfxTextPrimary)
                 }
             }
         },

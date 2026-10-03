@@ -261,66 +261,66 @@ class VfxRepository(
     }
 
     /**
-     * Seeds initial project "Project Falcon" if the database is brand new,
-     * matching the user's brief specifications.
+     * Explicitly loads a sample demo project "[DEMO] Project Falcon" only
+     * when the user deliberately requests it. Never run automatically on new installs.
      */
-    suspend fun seedInitialDataIfEmpty() = withContext(Dispatchers.IO) {
-        if (projectDao.getProjectCount() == 0) {
-            val falconProject = ProjectEntity(
-                name = "Project Falcon",
-                client = "XYZ Studios",
-                productionCompany = "Falcon Films",
-                productionShow = "Falcon: Dawn of the Cyber Sentinel",
-                projectIdCode = "FLC-2026",
-                description = "Primary VFX plate photography, tracking pass and screen replacements.",
-                director = "Sarah Connor",
-                vfxSupervisor = "Marcus Vance",
-                vfxProducer = "Elena Rostova",
-                cameraOperator = "Dave K.",
-                date = "03 Oct 2026",
-                location = "Stage 4, Pinewood & Pune Exterior",
-                cameraDefaults = CameraSettings(
-                    cameraManufacturer = "Sony",
-                    cameraModel = "FX6",
-                    cameraUnitId = "A-CAM",
-                    lensManufacturer = "Zeiss",
-                    lensModel = "Supreme Prime",
-                    lensId = "SP-24",
-                    focalLength = "24mm",
-                    sensorFormat = "Full Frame 35mm",
-                    sensorSize = "35.7 x 18.8 mm",
-                    resolution = "4096x2160 (4K DCI)",
-                    frameRate = "24 fps",
-                    iso = "800",
-                    shutterSpeed = "1/48",
-                    aperture = "f/2.8",
-                    whiteBalance = "5600K",
-                    exposureCompensation = "0.0 EV",
-                    colorSpace = "S-Gamut3.Cine",
-                    gammaProfile = "S-Log3",
-                    recordingFormat = "XAVC-I 422 10-bit"
-                ),
-                vfxDefaults = VfxSettings(
-                    plateType = "Reference / Monitor Pass",
-                    environment = "Interior Stage with Green Tracking Marks",
-                    lightingNotes = "5600K Key light, 4000K monitor spill",
-                    generalVfxNotes = "Avoid reflections on control room terminals",
-                    cameraHeight = "1.5 m",
-                    defaultCameraDistance = "2.8 m",
-                    defaultTrackingNotes = "Orange X markers placed 30cm apart on screen perimeter"
-                )
+    suspend fun loadDemoProject(): ProjectEntity = withContext(Dispatchers.IO) {
+        val falconProject = ProjectEntity(
+            name = "[DEMO] Project Falcon",
+            client = "XYZ Studios (Demo)",
+            productionCompany = "Falcon Films",
+            productionShow = "Falcon: Dawn of the Cyber Sentinel",
+            projectIdCode = "DEMO-2026",
+            description = "Demo VFX plate photography, tracking pass and screen replacements.",
+            director = "Sarah Connor",
+            vfxSupervisor = "Marcus Vance",
+            vfxProducer = "Elena Rostova",
+            cameraOperator = "Dave K.",
+            date = "03 Oct 2026",
+            location = "Stage 4, Pinewood & Pune Exterior",
+            cameraDefaults = CameraSettings(
+                cameraManufacturer = "Sony",
+                cameraModel = "FX6",
+                cameraUnitId = "A-CAM",
+                lensManufacturer = "Zeiss",
+                lensModel = "Supreme Prime",
+                lensId = "SP-24",
+                focalLength = "24mm",
+                sensorFormat = "Full Frame 35mm",
+                sensorSize = "35.7 x 18.8 mm",
+                resolution = "4096x2160 (4K DCI)",
+                frameRate = "24 fps",
+                iso = "800",
+                shutterSpeed = "1/48",
+                aperture = "f/2.8",
+                whiteBalance = "5600K",
+                exposureCompensation = "0.0 EV",
+                colorSpace = "S-Gamut3.Cine",
+                gammaProfile = "S-Log3",
+                recordingFormat = "XAVC-I 422 10-bit"
+            ),
+            vfxDefaults = VfxSettings(
+                plateType = "Reference / Monitor Pass",
+                environment = "Interior Stage with Green Tracking Marks",
+                lightingNotes = "5600K Key light, 4000K monitor spill",
+                generalVfxNotes = "Avoid reflections on control room terminals",
+                cameraHeight = "1.5 m",
+                defaultCameraDistance = "2.8 m",
+                defaultTrackingNotes = "Orange X markers placed 30cm apart on screen perimeter"
             )
-            projectDao.insertProject(falconProject)
+        )
+        projectDao.insertProject(falconProject)
 
-            // Create Day 1
-            val day1 = ShootingDayEntity(
-                projectId = falconProject.id,
-                dayNumber = 1,
-                date = "03 Oct 2026",
-                location = "Pune, Stage 4",
-                dayNotes = "Control room hero scene setups. Monitor screen replacement passes."
-            )
-            shootingDayDao.insertShootingDay(day1)
-        }
+        // Create Day 1
+        val day1 = ShootingDayEntity(
+            projectId = falconProject.id,
+            dayNumber = 1,
+            date = "03 Oct 2026",
+            location = "Pune, Stage 4",
+            dayNotes = "Control room hero scene setups. Monitor screen replacement passes."
+        )
+        shootingDayDao.insertShootingDay(day1)
+
+        falconProject
     }
 }

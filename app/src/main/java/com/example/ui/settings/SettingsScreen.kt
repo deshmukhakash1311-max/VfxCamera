@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -181,14 +182,14 @@ fun SettingsScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            repository.seedInitialDataIfEmpty()
+                            repository.loadDemoProject()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = VfxSurface, contentColor = VfxAmber),
                     shape = RoundedCornerShape(4.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("button_load_demo_project")
                 ) {
-                    Text("RE-SEED 'PROJECT FALCON' SAMPLE", fontWeight = FontWeight.Bold)
+                    Text("LOAD DEMO PROJECT", fontWeight = FontWeight.Bold)
                 }
             }
         }

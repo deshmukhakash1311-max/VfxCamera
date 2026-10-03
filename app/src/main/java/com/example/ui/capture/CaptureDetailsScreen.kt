@@ -450,28 +450,28 @@ fun CaptureDetailsScreen(
                                 Text("VFX & CAMERA TRACKING DATA", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = VfxCyan))
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    VfxTextField(value = plateTypeText, onValueChange = { plateTypeText = it }, label = "Plate Type", placeholder = "Reference / Monitor Pass", modifier = Modifier.weight(1f))
-                                    VfxTextField(value = envText, onValueChange = { envText = it }, label = "Environment", placeholder = "Interior Stage", modifier = Modifier.weight(1f))
+                                    VfxTextField(value = plateTypeText, onValueChange = { plateTypeText = it }, label = "Plate Type", placeholder = "e.g. Reference / Clean Plate", modifier = Modifier.weight(1f))
+                                    VfxTextField(value = envText, onValueChange = { envText = it }, label = "Environment", placeholder = "e.g. Interior Stage with Green Screen", modifier = Modifier.weight(1f))
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    VfxTextField(value = camHeightText, onValueChange = { camHeightText = it }, label = "Camera Height", placeholder = "1.5 m", modifier = Modifier.weight(1f))
-                                    VfxTextField(value = camDistText, onValueChange = { camDistText = it }, label = "Camera Distance", placeholder = "2.8 m", modifier = Modifier.weight(1f))
+                                    VfxTextField(value = camHeightText, onValueChange = { camHeightText = it }, label = "Camera Height", placeholder = "e.g. 1.6 m", modifier = Modifier.weight(1f))
+                                    VfxTextField(value = camDistText, onValueChange = { camDistText = it }, label = "Camera Distance", placeholder = "e.g. 3.5 m", modifier = Modifier.weight(1f))
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    VfxTextField(value = camTiltText, onValueChange = { camTiltText = it }, label = "Tilt", placeholder = "-5 deg", modifier = Modifier.weight(1f))
-                                    VfxTextField(value = camRollText, onValueChange = { camRollText = it }, label = "Roll", placeholder = "0 deg", modifier = Modifier.weight(1f))
-                                    VfxTextField(value = camPanText, onValueChange = { camPanText = it }, label = "Pan / Heading", placeholder = "45 deg", modifier = Modifier.weight(1f))
+                                    VfxTextField(value = camTiltText, onValueChange = { camTiltText = it }, label = "Tilt", placeholder = "e.g. -2°", modifier = Modifier.weight(1f))
+                                    VfxTextField(value = camRollText, onValueChange = { camRollText = it }, label = "Roll", placeholder = "e.g. 0°", modifier = Modifier.weight(1f))
+                                    VfxTextField(value = camPanText, onValueChange = { camPanText = it }, label = "Pan", placeholder = "e.g. 0°", modifier = Modifier.weight(1f))
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                VfxTextField(value = trackingMarkersText, onValueChange = { trackingMarkersText = it }, label = "Tracking Markers", placeholder = "Orange X markers placed 30cm apart")
+                                VfxTextField(value = trackingMarkersText, onValueChange = { trackingMarkersText = it }, label = "Tracking Markers", placeholder = "e.g. 4 markers")
                                 Spacer(modifier = Modifier.height(8.dp))
-                                VfxTextField(value = lightingNotesText, onValueChange = { lightingNotesText = it }, label = "Lighting Notes", placeholder = "Key 5600K 45deg, ambient fill")
+                                VfxTextField(value = lightingNotesText, onValueChange = { lightingNotesText = it }, label = "Lighting Notes", placeholder = "e.g. Key light camera-left")
                                 Spacer(modifier = Modifier.height(8.dp))
-                                VfxTextField(value = lensDistortText, onValueChange = { lensDistortText = it }, label = "Lens Distortion Notes", placeholder = "Grid chart shot captured at end of day")
+                                VfxTextField(value = lensDistortText, onValueChange = { lensDistortText = it }, label = "Lens Distortion Notes", placeholder = "e.g. Mild barrel distortion")
                                 Spacer(modifier = Modifier.height(8.dp))
-                                VfxTextField(value = vfxNotesText, onValueChange = { vfxNotesText = it }, label = "VFX Notes", placeholder = "Screen replacement reference notes...", singleLine = false)
+                                VfxTextField(value = vfxNotesText, onValueChange = { vfxNotesText = it }, label = "VFX Notes", placeholder = "e.g. Tracking markers visible", singleLine = false)
                                 Spacer(modifier = Modifier.height(14.dp))
                                 Button(
                                     onClick = {

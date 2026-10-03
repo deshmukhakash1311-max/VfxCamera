@@ -1,5 +1,6 @@
 package com.example.ui.shootingday
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -77,6 +79,7 @@ fun DayDetailsScreen(
     dayId: String,
     onNavigateBack: () -> Unit,
     onOpenCamera: () -> Unit,
+    onExportDailyReport: () -> Unit,
     onCaptureClick: (String) -> Unit,
     onOpenShotList: () -> Unit,
     modifier: Modifier = Modifier
@@ -111,6 +114,9 @@ fun DayDetailsScreen(
                     subtitle = "${currentProj.name} · ${currentDay.date}",
                     onBack = onNavigateBack,
                     actions = {
+                        IconButton(onClick = onExportDailyReport, modifier = Modifier.testTag("action_export_daily_report")) {
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = "Export Daily Report", tint = VfxAmber)
+                        }
                         IconButton(onClick = onOpenShotList, modifier = Modifier.testTag("action_shot_list")) {
                             Icon(Icons.Default.List, contentDescription = "Shot List", tint = VfxTextSecondary)
                         }
@@ -125,7 +131,7 @@ fun DayDetailsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "DAY ${currentDay.dayNumber} — ${currentDay.date}",
                             style = MaterialTheme.typography.titleMedium.copy(
@@ -141,15 +147,29 @@ fun DayDetailsScreen(
                         )
                     }
 
-                    Button(
-                        onClick = onOpenCamera,
-                        colors = ButtonDefaults.buttonColors(containerColor = VfxAmber, contentColor = VfxBlack),
-                        shape = RoundedCornerShape(4.dp),
-                        modifier = Modifier.testTag("button_open_camera_from_day")
-                    ) {
-                        Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("OPEN CAMERA", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(
+                            onClick = onExportDailyReport,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = VfxAmber),
+                            border = BorderStroke(1.dp, VfxAmber),
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.testTag("button_export_daily_report")
+                        ) {
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("EXPORT DAILY REPORT", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                        }
+
+                        Button(
+                            onClick = onOpenCamera,
+                            colors = ButtonDefaults.buttonColors(containerColor = VfxAmber, contentColor = VfxBlack),
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.testTag("button_open_camera_from_day")
+                        ) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("CAMERA", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                        }
                     }
                 }
 

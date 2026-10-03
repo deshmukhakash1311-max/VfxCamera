@@ -216,18 +216,71 @@ fun ProjectsListScreen(
                         tint = VfxBorder,
                         modifier = Modifier.size(64.dp)
                     )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = if (searchQuery.isNotBlank()) "No matching projects" else if (selectedTab == 0) "No active VFX projects" else "No archived projects",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = VfxTextSecondary
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Create a project to record camera metadata and start shooting.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = VfxTextMuted
-                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    if (searchQuery.isNotBlank()) {
+                        Text(
+                            text = "No matching projects",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = VfxTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Try a different search term.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = VfxTextMuted
+                        )
+                    } else if (selectedTab == 0) {
+                        Text(
+                            text = "NO PROJECTS",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            ),
+                            color = VfxTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Create your first VFX project.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = VfxTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        androidx.compose.material3.Button(
+                            onClick = onCreateProjectClick,
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = VfxAmber,
+                                contentColor = VfxBlack
+                            ),
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.testTag("empty_create_project_button")
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("+ CREATE PROJECT", fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    repository.loadDemoProject()
+                                }
+                            },
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                contentColor = VfxAmber
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, VfxBorder),
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.testTag("empty_load_demo_button")
+                        ) {
+                            Text("LOAD DEMO PROJECT", fontWeight = FontWeight.Medium)
+                        }
+                    } else {
+                        Text(
+                            text = "No archived projects",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = VfxTextSecondary
+                        )
+                    }
                 }
             }
         } else {
@@ -316,14 +369,34 @@ private fun ProjectCard(
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = project.name,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        color = VfxTextPrimary
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = project.name,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            ),
+                            color = VfxTextPrimary
+                        )
+                        if (project.name.contains("DEMO", ignoreCase = true)) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(VfxAmber)
+                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                            ) {
+                                Text(
+                                    "DEMO",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = VfxBlack
+                                )
+                            }
+                        }
+                    }
                     if (project.client.isNotBlank() || project.productionCompany.isNotBlank()) {
                         Text(
                             text = listOf(project.client, project.productionCompany).filter { it.isNotBlank() }.joinToString(" · "),

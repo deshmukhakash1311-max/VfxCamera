@@ -161,7 +161,14 @@ fun VfxTextField(
             onValueChange = onValueChange,
             placeholder = {
                 if (placeholder.isNotBlank()) {
-                    Text(placeholder, color = VfxTextMuted, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = placeholder,
+                        color = VfxTextMuted.copy(alpha = 0.55f),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                        )
+                    )
                 }
             },
             singleLine = singleLine,

@@ -88,6 +88,7 @@ fun VfxAppNavigation(
 
     var currentTab by remember { mutableStateOf(BottomTab.PROJECTS) }
     var exportPdfProjectId by remember { mutableStateOf<String?>(null) }
+    var exportPdfDayId by remember { mutableStateOf<String?>(null) }
 
     fun navigateTo(screen: Screen) {
         backStack = backStack + screen
@@ -97,11 +98,6 @@ fun VfxAppNavigation(
         if (backStack.size > 1) {
             backStack = backStack.dropLast(1)
         }
-    }
-
-    // Seed sample project if empty
-    LaunchedEffect(Unit) {
-        repository.seedInitialDataIfEmpty()
     }
 
     val isFullscreenCamera = currentScreen is Screen.Camera
@@ -234,6 +230,10 @@ fun VfxAppNavigation(
                         dayId = screen.dayId,
                         onNavigateBack = { popBack() },
                         onOpenCamera = { navigateTo(Screen.Camera(screen.projectId, screen.dayId)) },
+                        onExportDailyReport = {
+                            exportPdfProjectId = screen.projectId
+                            exportPdfDayId = screen.dayId
+                        },
                         onCaptureClick = { capId -> navigateTo(Screen.CaptureDetails(capId)) },
                         onOpenShotList = { navigateTo(Screen.ShotList(screen.dayId)) }
                     )
@@ -294,7 +294,12 @@ fun VfxAppNavigation(
                     ExportPdfDialog(
                         project = proj,
                         repository = repository,
-                        onDismiss = { exportPdfProjectId = null },
+                        initialDayId = exportPdfDayId,
+                        lockToDailyReport = (exportPdfDayId != null),
+                        onDismiss = {
+                            exportPdfProjectId = null
+                            exportPdfDayId = null
+                        },
                         onReportGenerated = {
                             // Dialog displays success view with Open/Share
                         }

@@ -3,25 +3,25 @@ package com.example.data.model
 import androidx.room.ColumnInfo
 
 data class CameraSettings(
-    @ColumnInfo(name = "cam_manufacturer") val cameraManufacturer: String = "Sony",
-    @ColumnInfo(name = "cam_model") val cameraModel: String = "FX6",
-    @ColumnInfo(name = "cam_unit_id") val cameraUnitId: String = "A-CAM",
-    @ColumnInfo(name = "lens_manufacturer") val lensManufacturer: String = "Zeiss",
-    @ColumnInfo(name = "lens_model") val lensModel: String = "Supreme Prime",
-    @ColumnInfo(name = "lens_id") val lensId: String = "L-01",
-    @ColumnInfo(name = "focal_length") val focalLength: String = "24mm",
-    @ColumnInfo(name = "sensor_format") val sensorFormat: String = "Full Frame 35mm",
-    @ColumnInfo(name = "sensor_size") val sensorSize: String = "35.7 x 18.8 mm",
-    @ColumnInfo(name = "resolution") val resolution: String = "4096x2160 (4K DCI)",
-    @ColumnInfo(name = "frame_rate") val frameRate: String = "24 fps",
-    @ColumnInfo(name = "iso") val iso: String = "800",
-    @ColumnInfo(name = "shutter_speed") val shutterSpeed: String = "1/48",
-    @ColumnInfo(name = "aperture") val aperture: String = "f/2.8",
-    @ColumnInfo(name = "white_balance") val whiteBalance: String = "5600K",
-    @ColumnInfo(name = "exposure_comp") val exposureCompensation: String = "0.0 EV",
-    @ColumnInfo(name = "color_space") val colorSpace: String = "S-Gamut3.Cine",
-    @ColumnInfo(name = "gamma_profile") val gammaProfile: String = "S-Log3",
-    @ColumnInfo(name = "recording_format") val recordingFormat: String = "XAVC-I 422 10-bit"
+    @ColumnInfo(name = "cam_manufacturer") val cameraManufacturer: String = "",
+    @ColumnInfo(name = "cam_model") val cameraModel: String = "",
+    @ColumnInfo(name = "cam_unit_id") val cameraUnitId: String = "",
+    @ColumnInfo(name = "lens_manufacturer") val lensManufacturer: String = "",
+    @ColumnInfo(name = "lens_model") val lensModel: String = "",
+    @ColumnInfo(name = "lens_id") val lensId: String = "",
+    @ColumnInfo(name = "focal_length") val focalLength: String = "",
+    @ColumnInfo(name = "sensor_format") val sensorFormat: String = "",
+    @ColumnInfo(name = "sensor_size") val sensorSize: String = "",
+    @ColumnInfo(name = "resolution") val resolution: String = "",
+    @ColumnInfo(name = "frame_rate") val frameRate: String = "",
+    @ColumnInfo(name = "iso") val iso: String = "",
+    @ColumnInfo(name = "shutter_speed") val shutterSpeed: String = "",
+    @ColumnInfo(name = "aperture") val aperture: String = "",
+    @ColumnInfo(name = "white_balance") val whiteBalance: String = "",
+    @ColumnInfo(name = "exposure_comp") val exposureCompensation: String = "",
+    @ColumnInfo(name = "color_space") val colorSpace: String = "",
+    @ColumnInfo(name = "gamma_profile") val gammaProfile: String = "",
+    @ColumnInfo(name = "recording_format") val recordingFormat: String = ""
 )
 
 data class CameraOverrides(

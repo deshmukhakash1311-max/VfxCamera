@@ -79,34 +79,34 @@ fun CreateEditProjectScreen(
     var location by remember { mutableStateOf("") }
 
     // Camera Defaults
-    var camManufacturer by remember { mutableStateOf("Sony") }
-    var camModel by remember { mutableStateOf("FX6") }
-    var camUnitId by remember { mutableStateOf("A-CAM") }
-    var lensManufacturer by remember { mutableStateOf("Zeiss") }
-    var lensModel by remember { mutableStateOf("Supreme Prime") }
-    var lensId by remember { mutableStateOf("SP-24") }
-    var focalLength by remember { mutableStateOf("24mm") }
-    var sensorFormat by remember { mutableStateOf("Full Frame 35mm") }
-    var sensorSize by remember { mutableStateOf("35.7 x 18.8 mm") }
-    var resolution by remember { mutableStateOf("4096x2160 (4K DCI)") }
-    var frameRate by remember { mutableStateOf("24 fps") }
-    var iso by remember { mutableStateOf("800") }
-    var shutterSpeed by remember { mutableStateOf("1/48") }
-    var aperture by remember { mutableStateOf("f/2.8") }
-    var whiteBalance by remember { mutableStateOf("5600K") }
-    var exposureCompensation by remember { mutableStateOf("0.0 EV") }
-    var colorSpace by remember { mutableStateOf("S-Gamut3.Cine") }
-    var gammaProfile by remember { mutableStateOf("S-Log3") }
-    var recordingFormat by remember { mutableStateOf("XAVC-I 422 10-bit") }
+    var camManufacturer by remember { mutableStateOf("") }
+    var camModel by remember { mutableStateOf("") }
+    var camUnitId by remember { mutableStateOf("") }
+    var lensManufacturer by remember { mutableStateOf("") }
+    var lensModel by remember { mutableStateOf("") }
+    var lensId by remember { mutableStateOf("") }
+    var focalLength by remember { mutableStateOf("") }
+    var sensorFormat by remember { mutableStateOf("") }
+    var sensorSize by remember { mutableStateOf("") }
+    var resolution by remember { mutableStateOf("") }
+    var frameRate by remember { mutableStateOf("") }
+    var iso by remember { mutableStateOf("") }
+    var shutterSpeed by remember { mutableStateOf("") }
+    var aperture by remember { mutableStateOf("") }
+    var whiteBalance by remember { mutableStateOf("") }
+    var exposureCompensation by remember { mutableStateOf("") }
+    var colorSpace by remember { mutableStateOf("") }
+    var gammaProfile by remember { mutableStateOf("") }
+    var recordingFormat by remember { mutableStateOf("") }
 
     // VFX Defaults
-    var plateType by remember { mutableStateOf("Reference / Clean Plate") }
-    var environment by remember { mutableStateOf("Interior Stage") }
-    var lightingNotes by remember { mutableStateOf("Key 5600K, fill 4000K") }
+    var plateType by remember { mutableStateOf("") }
+    var environment by remember { mutableStateOf("") }
+    var lightingNotes by remember { mutableStateOf("") }
     var generalVfxNotes by remember { mutableStateOf("") }
-    var cameraHeight by remember { mutableStateOf("1.5 m") }
-    var defaultCameraDistance by remember { mutableStateOf("3.0 m") }
-    var defaultTrackingNotes by remember { mutableStateOf("Tracking markers placed on set walls") }
+    var cameraHeight by remember { mutableStateOf("") }
+    var defaultCameraDistance by remember { mutableStateOf("") }
+    var defaultTrackingNotes by remember { mutableStateOf("") }
 
     var nameError by remember { mutableStateOf(false) }
 
@@ -378,80 +378,80 @@ fun CreateEditProjectScreen(
                 1 -> {
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = camManufacturer, onValueChange = { camManufacturer = it }, label = "Camera Manufacturer", placeholder = "Sony", modifier = Modifier.weight(1f))
-                            VfxTextField(value = camModel, onValueChange = { camModel = it }, label = "Camera Model", placeholder = "FX6", modifier = Modifier.weight(1f))
+                            VfxTextField(value = camManufacturer, onValueChange = { camManufacturer = it }, label = "Camera Manufacturer", placeholder = "e.g. Sony", modifier = Modifier.weight(1f))
+                            VfxTextField(value = camModel, onValueChange = { camModel = it }, label = "Camera Model", placeholder = "e.g. Sony FX6", modifier = Modifier.weight(1f))
                         }
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = camUnitId, onValueChange = { camUnitId = it }, label = "Camera Unit ID", placeholder = "A-CAM", modifier = Modifier.weight(1f))
-                            VfxTextField(value = resolution, onValueChange = { resolution = it }, label = "Resolution", placeholder = "4096x2160 (4K DCI)", modifier = Modifier.weight(1f))
+                            VfxTextField(value = camUnitId, onValueChange = { camUnitId = it }, label = "Camera Unit ID", placeholder = "e.g. A-CAM", modifier = Modifier.weight(1f))
+                            VfxTextField(value = resolution, onValueChange = { resolution = it }, label = "Resolution", placeholder = "e.g. 3840×2160", modifier = Modifier.weight(1f))
                         }
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = lensManufacturer, onValueChange = { lensManufacturer = it }, label = "Lens Manufacturer", placeholder = "Zeiss", modifier = Modifier.weight(1f))
-                            VfxTextField(value = lensModel, onValueChange = { lensModel = it }, label = "Lens Model", placeholder = "Supreme Prime", modifier = Modifier.weight(1f))
+                            VfxTextField(value = lensManufacturer, onValueChange = { lensManufacturer = it }, label = "Lens Manufacturer", placeholder = "e.g. Zeiss", modifier = Modifier.weight(1f))
+                            VfxTextField(value = lensModel, onValueChange = { lensModel = it }, label = "Lens Model", placeholder = "e.g. Supreme Prime", modifier = Modifier.weight(1f))
                         }
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = focalLength, onValueChange = { focalLength = it }, label = "Focal Length", placeholder = "24mm", modifier = Modifier.weight(1f))
-                            VfxTextField(value = lensId, onValueChange = { lensId = it }, label = "Lens ID", placeholder = "SP-24", modifier = Modifier.weight(1f))
+                            VfxTextField(value = focalLength, onValueChange = { focalLength = it }, label = "Focal Length", placeholder = "e.g. 24mm", modifier = Modifier.weight(1f))
+                            VfxTextField(value = lensId, onValueChange = { lensId = it }, label = "Lens ID", placeholder = "e.g. SP-24", modifier = Modifier.weight(1f))
                         }
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = iso, onValueChange = { iso = it }, label = "ISO", placeholder = "800", modifier = Modifier.weight(1f))
-                            VfxTextField(value = shutterSpeed, onValueChange = { shutterSpeed = it }, label = "Shutter Speed", placeholder = "1/48", modifier = Modifier.weight(1f))
+                            VfxTextField(value = iso, onValueChange = { iso = it }, label = "ISO", placeholder = "e.g. 800", modifier = Modifier.weight(1f))
+                            VfxTextField(value = shutterSpeed, onValueChange = { shutterSpeed = it }, label = "Shutter Speed", placeholder = "e.g. 1/48", modifier = Modifier.weight(1f))
                         }
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = aperture, onValueChange = { aperture = it }, label = "Aperture", placeholder = "f/2.8", modifier = Modifier.weight(1f))
-                            VfxTextField(value = frameRate, onValueChange = { frameRate = it }, label = "Frame Rate", placeholder = "24 fps", modifier = Modifier.weight(1f))
+                            VfxTextField(value = aperture, onValueChange = { aperture = it }, label = "Aperture", placeholder = "e.g. f/2.8", modifier = Modifier.weight(1f))
+                            VfxTextField(value = frameRate, onValueChange = { frameRate = it }, label = "Frame Rate", placeholder = "e.g. 24", modifier = Modifier.weight(1f))
                         }
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = whiteBalance, onValueChange = { whiteBalance = it }, label = "White Balance", placeholder = "5600K", modifier = Modifier.weight(1f))
-                            VfxTextField(value = exposureCompensation, onValueChange = { exposureCompensation = it }, label = "Exposure Comp", placeholder = "0.0 EV", modifier = Modifier.weight(1f))
+                            VfxTextField(value = whiteBalance, onValueChange = { whiteBalance = it }, label = "White Balance", placeholder = "e.g. 5600K", modifier = Modifier.weight(1f))
+                            VfxTextField(value = exposureCompensation, onValueChange = { exposureCompensation = it }, label = "Exposure Comp", placeholder = "e.g. 0.0 EV", modifier = Modifier.weight(1f))
                         }
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = colorSpace, onValueChange = { colorSpace = it }, label = "Color Space", placeholder = "S-Gamut3.Cine", modifier = Modifier.weight(1f))
-                            VfxTextField(value = gammaProfile, onValueChange = { gammaProfile = it }, label = "Gamma / Log Profile", placeholder = "S-Log3", modifier = Modifier.weight(1f))
+                            VfxTextField(value = colorSpace, onValueChange = { colorSpace = it }, label = "Color Space", placeholder = "e.g. S-Log3", modifier = Modifier.weight(1f))
+                            VfxTextField(value = gammaProfile, onValueChange = { gammaProfile = it }, label = "Gamma / Log Profile", placeholder = "e.g. S-Log3", modifier = Modifier.weight(1f))
                         }
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = sensorFormat, onValueChange = { sensorFormat = it }, label = "Sensor Format", placeholder = "Full Frame 35mm", modifier = Modifier.weight(1f))
-                            VfxTextField(value = recordingFormat, onValueChange = { recordingFormat = it }, label = "Recording Format", placeholder = "XAVC-I 422 10-bit", modifier = Modifier.weight(1f))
+                            VfxTextField(value = sensorFormat, onValueChange = { sensorFormat = it }, label = "Sensor Format", placeholder = "e.g. Full Frame 35mm", modifier = Modifier.weight(1f))
+                            VfxTextField(value = recordingFormat, onValueChange = { recordingFormat = it }, label = "Recording Format", placeholder = "e.g. XAVC-I 422 10-bit", modifier = Modifier.weight(1f))
                         }
                     }
                 }
                 2 -> {
                     item {
-                        VfxTextField(value = plateType, onValueChange = { plateType = it }, label = "Default Plate Type", placeholder = "Reference / Clean Plate")
+                        VfxTextField(value = plateType, onValueChange = { plateType = it }, label = "Default Plate Type", placeholder = "e.g. Reference / Clean Plate")
                     }
                     item {
-                        VfxTextField(value = environment, onValueChange = { environment = it }, label = "Environment", placeholder = "Interior Stage with Green Screen")
+                        VfxTextField(value = environment, onValueChange = { environment = it }, label = "Environment", placeholder = "e.g. Interior Stage with Green Screen")
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            VfxTextField(value = cameraHeight, onValueChange = { cameraHeight = it }, label = "Default Camera Height", placeholder = "1.5 m", modifier = Modifier.weight(1f))
-                            VfxTextField(value = defaultCameraDistance, onValueChange = { defaultCameraDistance = it }, label = "Default Distance", placeholder = "3.0 m", modifier = Modifier.weight(1f))
+                            VfxTextField(value = cameraHeight, onValueChange = { cameraHeight = it }, label = "Default Camera Height", placeholder = "e.g. 1.6 m", modifier = Modifier.weight(1f))
+                            VfxTextField(value = defaultCameraDistance, onValueChange = { defaultCameraDistance = it }, label = "Default Distance", placeholder = "e.g. 3.5 m", modifier = Modifier.weight(1f))
                         }
                     }
                     item {
-                        VfxTextField(value = lightingNotes, onValueChange = { lightingNotes = it }, label = "Default Lighting Notes", placeholder = "Key 5600K, fill 4000K", singleLine = false)
+                        VfxTextField(value = lightingNotes, onValueChange = { lightingNotes = it }, label = "Default Lighting Notes", placeholder = "e.g. Key light camera-left", singleLine = false)
                     }
                     item {
-                        VfxTextField(value = defaultTrackingNotes, onValueChange = { defaultTrackingNotes = it }, label = "Default Tracking Notes", placeholder = "Marker tape pattern & coordinates", singleLine = false)
+                        VfxTextField(value = defaultTrackingNotes, onValueChange = { defaultTrackingNotes = it }, label = "Default Tracking Notes", placeholder = "e.g. 4 markers", singleLine = false)
                     }
                     item {
-                        VfxTextField(value = generalVfxNotes, onValueChange = { generalVfxNotes = it }, label = "General VFX Notes", placeholder = "Special requirements, CG assets reference...", singleLine = false)
+                        VfxTextField(value = generalVfxNotes, onValueChange = { generalVfxNotes = it }, label = "General VFX Notes", placeholder = "e.g. Tracking markers visible", singleLine = false)
                     }
                 }
             }
