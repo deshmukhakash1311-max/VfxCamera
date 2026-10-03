@@ -1,0 +1,6 @@
+{
+  "name": "VFX Capture",
+  "description": "Professional VFX camera and production metadata logging, shot capture, hierarchical inheritance, and PDF report generator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Viewfinder / Slate Frame -->
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 32,38 L 32,32 L 38,32" />
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 70,32 L 76,32 L 76,38" />
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 76,70 L 76,76 L 70,76" />
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 38,76 L 32,76 L 32,70" />
+
+    <!-- Center Lens Outer Ring -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:pathData="M 54,34 A 20,20 0 1 1 53.99,34 Z" />
+
+    <!-- Aperture Blades -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M 54,39 L 63,47 L 58,49 Z" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M 68,48 L 68,60 L 63,56 Z" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M 64,65 L 53,69 L 55,64 Z" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M 47,68 L 39,59 L 44,57 Z" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M 40,53 L 42,42 L 46,47 Z" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M 46,39 L 58,38 L 53,42 Z" />
+
+    <!-- Center Target / Sensor Dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 54,51 A 3,3 0 1 1 53.99,51 Z" />
+
+    <!-- Crosshair ticks -->
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="2"
+        android:pathData="M 54,26 L 54,30 M 54,78 L 54,82 M 26,54 L 30,54 M 78,54 L 82,54" />
+</vector>
