@@ -1,6 +1,7 @@
 package com.example.ui.settings
 
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -182,7 +183,13 @@ fun SettingsScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            repository.loadDemoProject()
+                            val result = repository.loadDemoProject()
+                            Toast.makeText(
+                                context,
+                                if (result.alreadyLoaded) "Demo project is already loaded. Delete it to load it again."
+                                else "Demo project loaded",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = VfxSurface, contentColor = VfxAmber),

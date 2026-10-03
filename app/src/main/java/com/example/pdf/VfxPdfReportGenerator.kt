@@ -9,7 +9,9 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
+import com.example.data.demo.DemoProject
 import com.example.data.model.CaptureEntity
+import com.example.data.model.InheritanceSource
 import com.example.data.model.ProjectEntity
 import com.example.data.model.ShootingDayEntity
 import com.example.domain.inheritance.MetadataResolver
@@ -33,6 +35,8 @@ data class PdfExportOptions(
     val selectedDayId: String? = null // null means all days
 )
 
+data class GeneratedReport(val file: File, val pageCount: Int)
+
 object VfxPdfReportGenerator {
 
     // A4 dimensions at 72 dpi: 595 x 842
@@ -47,11 +51,21 @@ object VfxPdfReportGenerator {
         days: List<ShootingDayEntity>,
         capturesByDay: Map<String, List<CaptureEntity>>,
         options: PdfExportOptions = PdfExportOptions()
-    ): File = withContext(Dispatchers.IO) {
+    ): File = generateReportWithInfo(context, project, days, capturesByDay, options).file
+
+    /** Same as [generateReport] but also returns the real number of pages written. */
+    suspend fun generateReportWithInfo(
+        context: Context,
+        project: ProjectEntity,
+        days: List<ShootingDayEntity>,
+        capturesByDay: Map<String, List<CaptureEntity>>,
+        options: PdfExportOptions = PdfExportOptions()
+    ): GeneratedReport = withContext(Dispatchers.IO) {
         val pdfDocument = PdfDocument()
 
         val cleanProjectName = project.name.trim().replace("[^a-zA-Z0-9_-]".toRegex(), "_").trim('_')
         val isDailyReport = options.selectedDayId != null
+        val isDemo = DemoProject.isDemo(project)
         val selectedDay = if (isDailyReport) days.find { it.id == options.selectedDayId } else null
 
         val filteredDays = if (selectedDay != null) {
@@ -130,7 +144,7 @@ object VfxPdfReportGenerator {
                 } else {
                     "VFX COMPLETE PROJECT REPORT  ·  ${project.name.ifBlank { "VFX PROJECT" }.uppercase(Locale.US)}"
                 }
-                c.drawText(headerText, MARGIN, 24f, mutedPaint)
+                c.drawText(if (isDemo) "$headerText  ·  ${DemoProject.BADGE}" else headerText, MARGIN, 24f, mutedPaint)
                 c.drawLine(MARGIN, 28f, PAGE_WIDTH - MARGIN, 28f, linePaint)
 
                 // Footer line
@@ -157,10 +171,17 @@ object VfxPdfReportGenerator {
                 }
             }
 
+            fun cardHeightFor(layout: String): Float = when (layout) {
+                "Image Only" -> 220f
+                "Compact" -> 160f
+                else -> 290f // Detailed
+            }
+
             // --- Cover / Project Details Section ---
             if (options.includeProjectDetails) {
                 currentY = 46f
-                val titleLabel = if (isDailyReport && selectedDay != null) "VFX DAILY CAPTURE REPORT" else "VFX COMPLETE PROJECT REPORT"
+                val baseTitle = if (isDailyReport && selectedDay != null) "VFX DAILY CAPTURE REPORT" else "VFX COMPLETE PROJECT REPORT"
+                val titleLabel = if (isDemo) "$baseTitle  ·  ${DemoProject.BADGE} - SAMPLE DATA" else baseTitle
                 canvas.drawText(titleLabel, MARGIN, currentY, subTitlePaint)
                 currentY += 24f
                 val projNameDisplay = project.name.ifBlank { "VFX PROJECT" }.uppercase(Locale.US)
@@ -180,34 +201,34 @@ object VfxPdfReportGenerator {
 
                 if (isDailyReport && selectedDay != null) {
                     canvas.drawText("Project:", col1X, rowY, boldPaint)
-                    canvas.drawText(project.name.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText(fitText(project.name.ifBlank { "Not specified" }, textPaint, col2X - 8f - (col1X + 70f)), col1X + 70f, rowY, textPaint)
                     canvas.drawText("Shooting Day:", col2X, rowY, boldPaint)
-                    canvas.drawText("Day ${selectedDay.dayNumber}", col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText("Day ${selectedDay.dayNumber}", textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     rowY += 15f
                     canvas.drawText("Date:", col1X, rowY, boldPaint)
-                    canvas.drawText(selectedDay.date.ifBlank { project.date.ifBlank { "Not specified" } }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText(fitText(selectedDay.date.ifBlank { project.date.ifBlank { "Not specified" } }, textPaint, col2X - 8f - (col1X + 70f)), col1X + 70f, rowY, textPaint)
                     canvas.drawText("Location:", col2X, rowY, boldPaint)
-                    canvas.drawText(selectedDay.location.ifBlank { project.location.ifBlank { "Not specified" } }, col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(selectedDay.location.ifBlank { project.location.ifBlank { "Not specified" } }, textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     rowY += 15f
                     canvas.drawText("Client:", col1X, rowY, boldPaint)
-                    canvas.drawText(project.client.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText(fitText(project.client.ifBlank { "Not specified" }, textPaint, col2X - 8f - (col1X + 70f)), col1X + 70f, rowY, textPaint)
                     canvas.drawText("Production:", col2X, rowY, boldPaint)
-                    canvas.drawText(project.productionCompany.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(project.productionCompany.ifBlank { "Not specified" }, textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     rowY += 15f
                     canvas.drawText("VFX Supervisor:", col1X, rowY, boldPaint)
-                    canvas.drawText(project.vfxSupervisor.ifBlank { "Not specified" }, col1X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(project.vfxSupervisor.ifBlank { "Not specified" }, textPaint, col2X - 8f - (col1X + 85f)), col1X + 85f, rowY, textPaint)
                     canvas.drawText("Director:", col2X, rowY, boldPaint)
-                    canvas.drawText(project.director.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(project.director.ifBlank { "Not specified" }, textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     rowY += 15f
                     canvas.drawText("Project Code:", col1X, rowY, boldPaint)
-                    canvas.drawText(project.projectIdCode.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText(fitText(project.projectIdCode.ifBlank { "Not specified" }, textPaint, col2X - 8f - (col1X + 70f)), col1X + 70f, rowY, textPaint)
                     canvas.drawText("Day Captures:", col2X, rowY, boldPaint)
                     val dayCaps = capturesByDay[selectedDay.id] ?: emptyList()
-                    canvas.drawText("${dayCaps.size} Captures", col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText("${dayCaps.size} Captures", textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     currentY += boxHeight + 14f
 
@@ -244,33 +265,33 @@ object VfxPdfReportGenerator {
                 } else {
                     // Complete Project Details
                     canvas.drawText("Client:", col1X, rowY, boldPaint)
-                    canvas.drawText(project.client.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText(fitText(project.client.ifBlank { "Not specified" }, textPaint, col2X - 8f - (col1X + 70f)), col1X + 70f, rowY, textPaint)
                     canvas.drawText("Date:", col2X, rowY, boldPaint)
-                    canvas.drawText(project.date.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(project.date.ifBlank { "Not specified" }, textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     rowY += 15f
                     canvas.drawText("Production:", col1X, rowY, boldPaint)
-                    canvas.drawText(project.productionCompany.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText(fitText(project.productionCompany.ifBlank { "Not specified" }, textPaint, col2X - 8f - (col1X + 70f)), col1X + 70f, rowY, textPaint)
                     canvas.drawText("Location:", col2X, rowY, boldPaint)
-                    canvas.drawText(project.location.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(project.location.ifBlank { "Not specified" }, textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     rowY += 15f
                     canvas.drawText("VFX Supervisor:", col1X, rowY, boldPaint)
-                    canvas.drawText(project.vfxSupervisor.ifBlank { "Not specified" }, col1X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(project.vfxSupervisor.ifBlank { "Not specified" }, textPaint, col2X - 8f - (col1X + 85f)), col1X + 85f, rowY, textPaint)
                     canvas.drawText("Director:", col2X, rowY, boldPaint)
-                    canvas.drawText(project.director.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(project.director.ifBlank { "Not specified" }, textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     rowY += 15f
                     canvas.drawText("VFX Producer:", col1X, rowY, boldPaint)
-                    canvas.drawText(project.vfxProducer.ifBlank { "Not specified" }, col1X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(project.vfxProducer.ifBlank { "Not specified" }, textPaint, col2X - 8f - (col1X + 85f)), col1X + 85f, rowY, textPaint)
                     canvas.drawText("Camera Op:", col2X, rowY, boldPaint)
-                    canvas.drawText(project.cameraOperator.ifBlank { "Not specified" }, col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText(project.cameraOperator.ifBlank { "Not specified" }, textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     rowY += 15f
                     canvas.drawText("Project Code:", col1X, rowY, boldPaint)
-                    canvas.drawText(project.projectIdCode.ifBlank { "Not specified" }, col1X + 70f, rowY, textPaint)
+                    canvas.drawText(fitText(project.projectIdCode.ifBlank { "Not specified" }, textPaint, col2X - 8f - (col1X + 70f)), col1X + 70f, rowY, textPaint)
                     canvas.drawText("Shooting Days:", col2X, rowY, boldPaint)
-                    canvas.drawText("${filteredDays.size} Days", col2X + 85f, rowY, textPaint)
+                    canvas.drawText(fitText("${filteredDays.size} Days", textPaint, PAGE_WIDTH - MARGIN - 12f - (col2X + 85f)), col2X + 85f, rowY, textPaint)
 
                     currentY += boxHeight + 14f
 
@@ -317,14 +338,15 @@ object VfxPdfReportGenerator {
         for (day in filteredDays) {
             val dayCaptures = capturesByDay[day.id] ?: emptyList()
 
-            ensureSpace(50f)
+            // Keep the day banner together with its first shot card (no orphaned banner at page end)
+            ensureSpace(50f + if (dayCaptures.isNotEmpty()) cardHeightFor(options.layoutType) else 0f)
             if (options.includeDayDetails) {
                 // Day header banner
                 canvas.drawRoundRect(RectF(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY + 24f), 3f, 3f, boxFillPaint)
                 canvas.drawRoundRect(RectF(MARGIN, currentY, PAGE_WIDTH - MARGIN, currentY + 24f), 3f, 3f, amberLinePaint)
 
                 canvas.drawText(
-                    "DAY ${day.dayNumber}   ·   ${day.date}   ·   ${day.location.ifBlank { "On Location" }}   (${dayCaptures.size} Captures)",
+                    fitText("DAY ${day.dayNumber}   ·   ${day.date}   ·   ${day.location.ifBlank { "On Location" }}   (${dayCaptures.size} Captures)", boldPaint, CONTENT_WIDTH - 20f),
                     MARGIN + 10f,
                     currentY + 16f,
                     boldPaint
@@ -348,11 +370,7 @@ object VfxPdfReportGenerator {
                     capture.vfxOverrides
                 )
 
-                val estimatedCardHeight = when (options.layoutType) {
-                    "Image Only" -> 220f
-                    "Compact" -> 160f
-                    else -> 230f // Detailed
-                }
+                val estimatedCardHeight = cardHeightFor(options.layoutType)
 
                 ensureSpace(estimatedCardHeight)
 
@@ -474,9 +492,43 @@ object VfxPdfReportGenerator {
                         }
                     }
 
+                    if (options.layoutType == "Detailed") {
+                        val maxW = PAGE_WIDTH - MARGIN - 8f - metaLeft
+                        fun line(text: String, paint: Paint = textPaint) {
+                            canvas.drawText(fitText(text, paint, maxW), metaLeft, metaY, paint)
+                            metaY += 12f
+                        }
+                        val pose = listOf(
+                            "Pan" to capture.cameraPan, "Tilt" to capture.cameraTilt,
+                            "Roll" to capture.cameraRoll, "Subject Dist" to capture.subjectDistance
+                        ).filter { it.second.isNotBlank() }.joinToString("  |  ") { "${it.first}: ${it.second}" }
+                        if (pose.isNotBlank()) line(pose)
+                        if (capture.trackingMarkers.isNotBlank()) line("Markers: ${capture.trackingMarkers}")
+                        if (options.includeLocation && !capture.locationName.isNullOrBlank()) line("Location: ${capture.locationName}")
+                        if (capture.vfxNotes.isNotBlank()) line("VFX Notes: ${capture.vfxNotes}")
+                        if (options.includeCameraMetadata) {
+                            val lens = MetadataResolver.inspectCaptureCameraFields(capture, day, project)
+                                .firstOrNull { it.key == "focalLength" }
+                            if (lens != null && lens.value.isNotBlank()) {
+                                val tag = when (lens.source) {
+                                    InheritanceSource.SHOT_OVERRIDE -> "SHOT OVERRIDE"
+                                    InheritanceSource.DAY_OVERRIDE -> "DAY OVERRIDE"
+                                    else -> "INHERITED (PROJECT)"
+                                }
+                                line("Lens Source: ${lens.value}  [$tag]", boldPaint)
+                            }
+                            val base = capture.baselineCamera
+                            val baseline = listOf(
+                                base.focalLength, if (base.iso.isNotBlank()) "ISO ${base.iso}" else "",
+                                base.shutterSpeed, base.aperture
+                            ).filter { it.isNotBlank() }.joinToString("  |  ")
+                            if (baseline.isNotBlank()) line("Baseline (at capture): $baseline", mutedPaint)
+                        }
+                    }
+
                     if (options.includeNotes && (capture.shotNotes.isNotBlank() || capture.additionalNotes.isNotBlank())) {
                         val notes = capture.shotNotes.ifBlank { capture.additionalNotes }
-                        canvas.drawText("NOTES: $notes", metaLeft, metaY, mutedPaint)
+                        canvas.drawText(fitText("NOTES: $notes", mutedPaint, PAGE_WIDTH - MARGIN - 8f - metaLeft), metaLeft, metaY, mutedPaint)
                     }
                 }
 
@@ -500,12 +552,18 @@ object VfxPdfReportGenerator {
         }
         pdfDocument.close()
 
-        pdfFile
+        GeneratedReport(pdfFile, pageNumber)
     } catch (e: Exception) {
         // Fallback for headless JVM / Robolectric environment where native graphics pipeline is not initialized
         writeFallbackPdf(pdfFile, project, filteredDays, capturesByDay, options)
-        pdfFile
+        GeneratedReport(pdfFile, 1) // the fallback writer always emits a single page
     }
+}
+
+private fun fitText(text: String, paint: Paint, maxWidth: Float): String {
+    if (paint.measureText(text) <= maxWidth) return text
+    val count = paint.breakText(text, true, maxWidth - paint.measureText("..."), null)
+    return text.take(count).trimEnd() + "..."
 }
 
 private fun writeFallbackPdf(
@@ -519,6 +577,7 @@ private fun writeFallbackPdf(
     val selectedDay = if (isDailyReport) days.find { it.id == options.selectedDayId } else null
 
     val content = buildString {
+        if (DemoProject.isDemo(project)) appendLine("${DemoProject.BADGE} - SAMPLE DATA")
         if (isDailyReport && selectedDay != null) {
             appendLine("VFX DAILY CAPTURE REPORT")
             appendLine("Project: ${project.name.ifBlank { "Not specified" }}")

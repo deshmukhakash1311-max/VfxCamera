@@ -3,22 +3,26 @@ package com.example.data.repository
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.room.withTransaction
+import com.example.data.demo.DemoProject
 import com.example.data.local.CaptureDao
 import com.example.data.local.ExportedReportDao
 import com.example.data.local.ProjectDao
 import com.example.data.local.ShootingDayDao
 import com.example.data.local.VfxDatabase
 import com.example.data.model.CameraOverrides
-import com.example.data.model.CameraSettings
 import com.example.data.model.CaptureEntity
 import com.example.data.model.ExportedReportEntity
 import com.example.data.model.ProjectEntity
 import com.example.data.model.ShootingDayEntity
 import com.example.data.model.VfxOverrides
-import com.example.data.model.VfxSettings
 import com.example.domain.inheritance.MetadataResolver
+import com.example.pdf.PdfExportOptions
+import com.example.pdf.VfxPdfReportGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -52,6 +56,7 @@ class VfxRepository(
     }
 
     suspend fun deleteProject(project: ProjectEntity) = withContext(Dispatchers.IO) {
+        if (DemoProject.isDemo(project)) cleanUpDemoFiles(project.id)
         projectDao.deleteProject(project)
     }
 
@@ -261,66 +266,100 @@ class VfxRepository(
     }
 
     /**
-     * Explicitly loads a sample demo project "[DEMO] Project Falcon" only
-     * when the user deliberately requests it. Never run automatically on new installs.
+     * Explicitly loads the sample "Project Aurora" demo project (3 days x 3 captures, 9 bundled
+     * demo images and the four demo PDF reports). Only ever called from a user action, never
+     * automatically on a fresh install. If the demo is already loaded it is returned unchanged
+     * instead of creating a duplicate; delete it like any other project to load it again.
      */
-    suspend fun loadDemoProject(): ProjectEntity = withContext(Dispatchers.IO) {
-        val falconProject = ProjectEntity(
-            name = "[DEMO] Project Falcon",
-            client = "XYZ Studios (Demo)",
-            productionCompany = "Falcon Films",
-            productionShow = "Falcon: Dawn of the Cyber Sentinel",
-            projectIdCode = "DEMO-2026",
-            description = "Demo VFX plate photography, tracking pass and screen replacements.",
-            director = "Sarah Connor",
-            vfxSupervisor = "Marcus Vance",
-            vfxProducer = "Elena Rostova",
-            cameraOperator = "Dave K.",
-            date = "03 Oct 2026",
-            location = "Stage 4, Pinewood & Pune Exterior",
-            cameraDefaults = CameraSettings(
-                cameraManufacturer = "Sony",
-                cameraModel = "FX6",
-                cameraUnitId = "A-CAM",
-                lensManufacturer = "Zeiss",
-                lensModel = "Supreme Prime",
-                lensId = "SP-24",
-                focalLength = "24mm",
-                sensorFormat = "Full Frame 35mm",
-                sensorSize = "35.7 x 18.8 mm",
-                resolution = "4096x2160 (4K DCI)",
-                frameRate = "24 fps",
-                iso = "800",
-                shutterSpeed = "1/48",
-                aperture = "f/2.8",
-                whiteBalance = "5600K",
-                exposureCompensation = "0.0 EV",
-                colorSpace = "S-Gamut3.Cine",
-                gammaProfile = "S-Log3",
-                recordingFormat = "XAVC-I 422 10-bit"
-            ),
-            vfxDefaults = VfxSettings(
-                plateType = "Reference / Monitor Pass",
-                environment = "Interior Stage with Green Tracking Marks",
-                lightingNotes = "5600K Key light, 4000K monitor spill",
-                generalVfxNotes = "Avoid reflections on control room terminals",
-                cameraHeight = "1.5 m",
-                defaultCameraDistance = "2.8 m",
-                defaultTrackingNotes = "Orange X markers placed 30cm apart on screen perimeter"
+    suspend fun loadDemoProject(): DemoLoadResult = demoMutex.withLock {
+        withContext(Dispatchers.IO) {
+            projectDao.getProjectByCode(DemoProject.CODE)?.let {
+                return@withContext DemoLoadResult(it, alreadyLoaded = true)
+            }
+
+            val demoDir = File(context.filesDir, DemoProject.ASSET_DIR).apply { if (!exists()) mkdirs() }
+            val key = UUID.randomUUID().toString().take(8)
+            fun imageFile(day: Int, shot: Int) = File(demoDir, "aurora_${key}_${DemoProject.assetName(day, shot)}")
+
+            val spec = DemoProject.build { day, shot -> imageFile(day, shot).absolutePath }
+            val copied = mutableListOf<File>()
+            try {
+                for (d in spec.days) for (s in d.shots) {
+                    val target = File(s.shot.imagePath)
+                    context.assets.open("${DemoProject.ASSET_DIR}/${s.assetName}").use { input ->
+                        FileOutputStream(target).use { out -> input.copyTo(out) }
+                    }
+                    copied.add(target)
+                }
+                database.withTransaction {
+                    projectDao.insertProject(spec.project)
+                    for (d in spec.days) {
+                        shootingDayDao.insertShootingDay(d.day)
+                        for (s in d.shots) captureDao.insertCapture(s.shot)
+                    }
+                }
+            } catch (e: Exception) {
+                copied.forEach { it.delete() }
+                throw e
+            }
+
+            // Demo PDFs are best-effort: a report failure must not undo a successfully loaded demo.
+            try {
+                generateDemoReports(spec)
+            } catch (_: Exception) {
+            }
+            DemoLoadResult(spec.project, alreadyLoaded = false)
+        }
+    }
+
+    private suspend fun generateDemoReports(spec: DemoProject.Spec) {
+        val days = spec.days.map { it.day }
+        val capturesByDay = spec.days.associate { it.day.id to it.shots.map { s -> s.shot } }
+        val layout = "Detailed"
+
+        suspend fun export(selectedDayId: String?, label: String, shotCount: Int) {
+            val generated = VfxPdfReportGenerator.generateReportWithInfo(
+                context = context,
+                project = spec.project,
+                days = days,
+                capturesByDay = capturesByDay,
+                options = PdfExportOptions(layoutType = layout, selectedDayId = selectedDayId)
             )
-        )
-        projectDao.insertProject(falconProject)
+            val file = generated.file
+            exportedReportDao.insertReport(
+                ExportedReportEntity(
+                    projectId = spec.project.id,
+                    projectName = spec.project.name,
+                    fileName = file.name,
+                    filePath = file.absolutePath,
+                    fileSize = file.length(),
+                    pageCount = generated.pageCount,
+                    shotCount = shotCount,
+                    layoutType = "$label - $layout"
+                )
+            )
+        }
 
-        // Create Day 1
-        val day1 = ShootingDayEntity(
-            projectId = falconProject.id,
-            dayNumber = 1,
-            date = "03 Oct 2026",
-            location = "Pune, Stage 4",
-            dayNotes = "Control room hero scene setups. Monitor screen replacement passes."
-        )
-        shootingDayDao.insertShootingDay(day1)
+        for (d in days) {
+            export(d.id, "Daily Report (Day ${d.dayNumber})", capturesByDay[d.id]?.size ?: 0)
+        }
+        export(null, "Complete Project Report", capturesByDay.values.sumOf { it.size })
+    }
 
-        falconProject
+    /** Removes the demo's exported PDFs and copied image files; used when the demo is deleted. */
+    private suspend fun cleanUpDemoFiles(projectId: String) {
+        exportedReportDao.getReportsListForProject(projectId).forEach { report ->
+            File(report.filePath).delete()
+            exportedReportDao.deleteReport(report)
+        }
+        captureDao.getCapturesListForProject(projectId).forEach { capture ->
+            File(capture.imagePath).delete()
+        }
+    }
+
+    companion object {
+        private val demoMutex = Mutex()
     }
 }
+
+data class DemoLoadResult(val project: ProjectEntity, val alreadyLoaded: Boolean)

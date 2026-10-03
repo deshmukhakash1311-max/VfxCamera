@@ -536,13 +536,15 @@ fun ExportPdfDialog(
                                     selectedDayId = selectedDayId
                                 )
 
-                                val file = VfxPdfReportGenerator.generateReport(
+                                val generated = VfxPdfReportGenerator.generateReportWithInfo(
                                     context = context,
                                     project = project,
                                     days = shootingDaysList,
                                     capturesByDay = capturesByDay,
                                     options = options
                                 )
+
+                                val file = generated.file
 
                                 // Save report record to DB
                                 val targetDays = if (selectedDayId != null) shootingDaysList.filter { it.id == selectedDayId } else shootingDaysList
@@ -560,7 +562,7 @@ fun ExportPdfDialog(
                                     fileName = file.name,
                                     filePath = file.absolutePath,
                                     fileSize = file.length(),
-                                    pageCount = 1,
+                                    pageCount = generated.pageCount,
                                     shotCount = totalShots,
                                     layoutType = reportTypeName
                                 )

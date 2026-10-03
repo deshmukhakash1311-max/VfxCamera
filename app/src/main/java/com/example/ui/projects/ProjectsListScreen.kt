@@ -1,5 +1,6 @@
 package com.example.ui.projects
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,11 +54,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.demo.DemoProject
 import com.example.data.model.ProjectEntity
 import com.example.data.repository.VfxRepository
 import com.example.ui.components.VfxCard
@@ -87,6 +90,7 @@ fun ProjectsListScreen(
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
+    val appContext = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) } // 0: PROJECTS, 1: ARCHIVE
     var searchQuery by remember { mutableStateOf("") }
     var projectPendingDelete by remember { mutableStateOf<ProjectEntity?>(null) }
@@ -262,7 +266,13 @@ fun ProjectsListScreen(
                         androidx.compose.material3.OutlinedButton(
                             onClick = {
                                 scope.launch {
-                                    repository.loadDemoProject()
+                                    val result = repository.loadDemoProject()
+                                    Toast.makeText(
+                                        appContext,
+                                        if (result.alreadyLoaded) "Demo project is already loaded. Delete it to load it again."
+                                        else "Demo project loaded",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             },
                             colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
@@ -378,7 +388,7 @@ private fun ProjectCard(
                             ),
                             color = VfxTextPrimary
                         )
-                        if (project.name.contains("DEMO", ignoreCase = true)) {
+                        if (DemoProject.isDemo(project)) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Box(
                                 modifier = Modifier
@@ -387,7 +397,7 @@ private fun ProjectCard(
                                     .padding(horizontal = 4.dp, vertical = 1.dp)
                             ) {
                                 Text(
-                                    "DEMO",
+                                    DemoProject.BADGE,
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold

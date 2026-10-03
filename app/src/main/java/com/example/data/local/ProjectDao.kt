@@ -23,6 +23,9 @@ interface ProjectDao {
     @Query("SELECT * FROM projects WHERE id = :id")
     fun observeProjectById(id: String): Flow<ProjectEntity?>
 
+    @Query("SELECT * FROM projects WHERE projectIdCode = :code LIMIT 1")
+    suspend fun getProjectByCode(code: String): ProjectEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProject(project: ProjectEntity)
 

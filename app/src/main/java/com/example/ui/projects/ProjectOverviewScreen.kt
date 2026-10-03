@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import com.example.data.demo.DemoProject
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
@@ -111,7 +112,8 @@ fun ProjectOverviewScreen(
             Column(modifier = Modifier.background(VfxBlack)) {
                 VfxTopBar(
                     title = currentProj.name,
-                    subtitle = currentProj.client.ifBlank { "VFX Project" },
+                    subtitle = if (DemoProject.isDemo(currentProj)) "${DemoProject.BADGE} · ${currentProj.client}"
+                        else currentProj.client.ifBlank { "VFX Project" },
                     onBack = onNavigateBack,
                     actions = {
                         IconButton(onClick = { onEditProject(currentProj.id) }, modifier = Modifier.testTag("action_edit_project")) {

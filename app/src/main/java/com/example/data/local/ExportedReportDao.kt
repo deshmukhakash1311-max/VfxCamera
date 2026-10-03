@@ -16,6 +16,9 @@ interface ExportedReportDao {
     @Query("SELECT * FROM exported_reports WHERE projectId = :projectId ORDER BY createdAt DESC")
     fun getReportsForProject(projectId: String): Flow<List<ExportedReportEntity>>
 
+    @Query("SELECT * FROM exported_reports WHERE projectId = :projectId")
+    suspend fun getReportsListForProject(projectId: String): List<ExportedReportEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReport(report: ExportedReportEntity)
 
